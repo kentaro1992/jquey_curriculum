@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html>
   <head>
@@ -32,7 +33,7 @@
       // https://webservice.rakuten.co.jp/api/booksbooksearch/
       //
       // $.ajax と $.each を調べてみてください
-      // 以下は今回使う$.ajaxの基本的な形です。
+      //以下は今回使う$.ajaxの基本的な形です。
       //
       // $.ajaxによってデータが取得できたら、必要なデータ(作品名とか作者名とか)を取得します。
       // 取得できたらDOM上に<ul class='lists'></ul>を用意しているので、その中に下のテンプレに沿ってデータを入れ込みましょう。
@@ -50,20 +51,58 @@
       // オブジェクトで取得したデータへのアクセス方法 以下参考程度に
       // http://qiita.com/marumaru8228/items/65fc684383b096f0e548
       //
-      //
-      // $.ajax({
-      //   url: 'https://app.rakuten.co.jp/services/api/BooksTotal/Search/20130522',
-      //   type: 'GET',
-      //   datatype: 'json',
-      //   data: {
-      //     // 「区分:サービス固有パラメーター」を確認して、必要な情報をdata内に入れましょう。
-      //     applicationId: '1019399324990976605', // (今回はこのIDを使用してください)
-      //     booksGenreId: '001'
-      //   },
-      // }).done(function(data) {
-      //   // この中にデータ取得後の動きを記述していきます。
-      // });
-      //
+      $(function() {
+        var pageNum = 0;
+        $('#js-search-button').on('click',function() {
+          pageNum = pageNum + 1;   //クリックごとに１ページ追加
+          var keyword = $('#js-search-word').val();
+          $.ajax({
+            url: 'https://app.rakuten.co.jp/services/api/BooksTotal/Search/20130522',
+            type: 'get',
+            datatype: 'json',
+            data: {
+              keyword: keyword,
+              applicationId: '1019399324990976605',
+              booksGenreId: '001',
+              hits: 20,
+              page: pageNum
+            },
+          }).done(function(data) {
+          if (data.count > 0) {
+            $('.coment').css('display','none');
+            //$('.datacoment').css('display','none');
+            $.each(data.Items,function(i,item) {   //$.each(オブジェクト,処理)
+               console.log(i);
+               console.log(item);
+              var list = $('<li class="lists__item">' + '<div class="lists__item__inner">' + '<a href="' +
+                item.Item.itemUrl + '"class="lists__item__link" target="_blank">' + '<img src="' + item.Item
+                .largeImageUrl + '" class="lists__item__img" alt="' + item.Item.title + '">' +
+                '<p class="lists__item__detail">作品名：　' + item.Item.title + '</p>' +
+                '<p class="lists__item__detail">作者　：　' + item.Item.author + '</p>' +
+                '<p class="lists__item__detail">出版社：　' + item.Item.publisherName + '</p>' + '</a>' +
+                '</div>' + '</li>');
+            $('#js-search-word').change(function() {
+              $('.lists').empty();   // (#~~)が変化した時listsを空にする処理
+            })
+            $('.lists').prepend(list);
+            })
+          } else if (data.count === 0) {   //検索結果が0の時
+            $('.lists').empty();
+            $('.lists').before('<div class="coment"></div>')
+            coment = $('.coment');
+            coment.html('<p class="message">検索結果が見つかりませんでした。<br>別のキーワードで検索して下さい。</p>');
+            $('.lists').append(coment);
+          }
+          })   //通信失敗時
+          //.fail(function()
+            //$('.lists').empty();
+            //$('.lists').after('<div class="datacoment"></div>')
+            //datacoment = $('<div class="datacoment"></div>');
+            //datacoment.html('<p class="message">データ通信できませんでした<br>接続を確認してください。</p>');
+            //$('.lists').append(datacoment);
+          //});
+        });
+      });
     </script>
   </body>
 </html>
