@@ -53,27 +53,43 @@
       //
       $(function() {
         var pageNum = 0;
+        var currentword = '';
         $('#js-search-button').on('click',function() {
-          pageNum = pageNum + 1;   //クリックごとに１ページ追加
+          console.log(currentword);
+          requestBooks();
+        })
+        function requestBooks() {
           var keyword = $('#js-search-word').val();
-          $.ajax({
-            url: 'https://app.rakuten.co.jp/services/api/BooksTotal/Search/20130522',
-            type: 'get',
-            datatype: 'json',
-            data: {
-              keyword: keyword,
-              applicationId: '1019399324990976605',
-              booksGenreId: '001',
-              hits: 20,
-              page: pageNum
-            },
-          }).done(function(data) {
+          if (currentword === keyword) {
+            pageNum++;
+          } else {
+            pageNum = 1;
+            currentword = keyword;
+            $('.lists').empty();
+          }
+        $.ajax({
+          url: 'https://app.rakuten.co.jp/services/api/BooksTotal/Search/20130522',
+          type: 'get',
+          datatype: 'json',
+          data: {
+            keyword: keyword,
+            applicationId: '1019399324990976605',
+            booksGenreId: '001',
+            hits: 20,
+            page: pageNum
+          },
+        }).done(function(data) {
+          showBooks(data);
+          console.log(data);
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+          showError(jqXHR, textStatus, errorThrown);
+        })
+        };
+        function showBooks(data) {
           if (data.count > 0) {
-            $('.coment').css('display','none');
-            //$('.datacoment').css('display','none');
             $.each(data.Items,function(i,item) {   //$.each(オブジェクト,処理)
-               console.log(i);
-               console.log(item);
+            // console.log(i);
+            // console.log(item);
               var list = $('<li class="lists__item">' + '<div class="lists__item__inner">' + '<a href="' +
                 item.Item.itemUrl + '"class="lists__item__link" target="_blank">' + '<img src="' + item.Item
                 .largeImageUrl + '" class="lists__item__img" alt="' + item.Item.title + '">' +
@@ -81,11 +97,8 @@
                 '<p class="lists__item__detail">作者　：　' + item.Item.author + '</p>' +
                 '<p class="lists__item__detail">出版社：　' + item.Item.publisherName + '</p>' + '</a>' +
                 '</div>' + '</li>');
-            $('#js-search-word').change(function() {
-              $('.lists').empty();   // (#~~)が変化した時listsを空にする処理
-            })
-            $('.lists').prepend(list);
-            })
+              $('.lists').prepend(list);
+              })
           } else if (data.count === 0) {   //検索結果が0の時
             $('.lists').empty();
             $('.lists').before('<div class="coment"></div>')
@@ -93,15 +106,18 @@
             coment.html('<p class="message">検索結果が見つかりませんでした。<br>別のキーワードで検索して下さい。</p>');
             $('.lists').append(coment);
           }
-          })   //通信失敗時
-          //.fail(function()
-            //$('.lists').empty();
-            //$('.lists').after('<div class="datacoment"></div>')
-            //datacoment = $('<div class="datacoment"></div>');
-            //datacoment.html('<p class="message">データ通信できませんでした<br>接続を確認してください。</p>');
-            //$('.lists').append(datacoment);
-          //});
-        });
+        }
+        function showError(jqXHR, textStatus, errorThrown) {
+          if ( jqXHR.status == 400) {
+            alert( jqXHR.status + "   2文字以上の検索ワードを入力してください。");
+          } else if ( jqXHR.status == 429) {
+            alert( jqXHR.status + "   リクエストの上限を超えました。しばらく時間を空けて、ご利用ください。");
+          } else if ( jqXHR.status == 500) {
+            alert( jqXHR.status + "   システムエラーです。しばらくお待ちください。")
+          } else if ( jqXHR.status ==　503) {
+            alert( jqXHR.status + "   メンテナンス中です。しばらくお待ちください。")
+          }
+        }
       });
     </script>
   </body>
